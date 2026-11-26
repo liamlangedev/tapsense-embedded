@@ -1,0 +1,18 @@
+SCHNELLTEST GPIO34
+
+1. ESP32 GND -> Sensor GND
+2. ESP32 3V3 -> Sensor VCC
+3. Sensor SIGNAL -> GPIO34
+
+Falls es ein passiver Widerstands-/FSR-Sensor ist:
+3V3 -> Sensor -> GPIO34 -> 10kOhm -> GND
+
+Dann quick_gpio34_test.ino flashen.
+Serial Monitor: 115200 baud, Zeilenende egal.
+Erwartet:
+  t=... ms  raw=.../4095  voltage=... V
+
+Beruehren/Belasten muss raw bzw. voltage veraendern.
+Bleibt raw nahe 0: Signal/GND/Wiring pruefen.
+Bleibt raw nahe 4095: Signal haengt an 3V3 oder Spannung zu hoch.
+GPIO34 niemals ueber 3.3 V legen.

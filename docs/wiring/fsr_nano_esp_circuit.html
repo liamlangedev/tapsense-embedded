@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nano to ESP8266 — FSR wiring</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui,sans-serif;background:#111827;color:#e5e7eb}body{max-width:1000px;margin:24px auto;padding:0 16px}h1{font-size:1.5rem}p{color:#cbd5e1}svg{width:100%;height:auto;border:1px solid #475569;border-radius:12px;background:#0f172a}.box{fill:#1e293b;stroke:#94a3b8;stroke-width:2}.title{fill:#f8fafc;font:bold 21px system-ui}.pin{fill:#cbd5e1;font:16px ui-monospace,monospace}.label{fill:#e2e8f0;font:15px system-ui}.small{fill:#94a3b8;font:13px system-ui}.wire{fill:none;stroke:#38bdf8;stroke-width:4}.gnd{fill:none;stroke:#a78bfa;stroke-width:4}.res{fill:#334155;stroke:#fbbf24;stroke-width:2}.warn{fill:#fbbf24;font:bold 15px system-ui}.note{fill:#1e293b;stroke:#475569;stroke-width:1.5}</style>
+<h1>Arduino Nano → ESP8266 serial data</h1>
+<p>One-way Nano telemetry, 115200 baud. The divider makes the Nano’s 5 V TX safe for the ESP8266’s 3.3 V RX.</p>
+<svg viewBox="0 0 960 540" role="img" aria-label="Nano TX through a resistor divider to ESP8266 RX, with common ground">
+<rect class="box" x="55" y="90" width="290" height="330" rx="18"/><text class="title" x="200" y="132" text-anchor="middle">Arduino Nano</text>
+<text class="pin" x="95" y="218">D1 / TX (5 V)</text><text class="pin" x="95" y="355">GND</text>
+<rect class="box" x="615" y="90" width="290" height="330" rx="18"/><text class="title" x="760" y="126" text-anchor="middle" style="font-size:18px">Ideaspark ESP8266 NodeMCU</text>
+<text class="pin" x="795" y="218">D7 / GPIO13 RX</text><text class="pin" x="650" y="355">GND</text>
+<text class="small" x="760" y="285" text-anchor="middle">Built-in SSD1306 OLED</text><text class="small" x="760" y="307" text-anchor="middle">SCL: D5 / GPIO14</text><text class="small" x="760" y="327" text-anchor="middle">SDA: D6 / GPIO12</text><text class="small" x="760" y="350" text-anchor="middle">Nano RX uses software UART on D7</text>
+<path class="wire" d="M220 212 H385"/><rect class="res" x="385" y="193" width="95" height="38" rx="5"/><text class="label" x="432" y="218" text-anchor="middle">1 kΩ</text><path class="wire" d="M480 212 H795"/>
+<circle cx="545" cy="212" r="6" fill="#38bdf8"/><path class="wire" d="M545 212 V300"/><rect class="res" x="526" y="300" width="38" height="74" rx="5"/><text class="label" x="575" y="341">2 kΩ</text><path class="gnd" d="M545 374 V390 H760 V355 M545 390 H200 V355"/>
+<text class="small" x="423" y="175" text-anchor="middle">series resistor</text><text class="small" x="630" y="188">RX signal ≈ 3.3 V</text>
+<rect class="note" x="105" y="450" width="750" height="58" rx="10"/><text class="warn" x="480" y="475" text-anchor="middle">Connect grounds together. Do not connect Nano TX directly to ESP RX.</text><text class="small" x="480" y="496" text-anchor="middle">Disconnect Nano TX from ESP RX while flashing the ESP via USB.</text>
+</svg>
+</html>

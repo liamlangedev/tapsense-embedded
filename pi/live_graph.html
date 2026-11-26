@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Sensor Graph</title>
+<style>
+:root {
+  --bg-0: #05070C;
+  --bg-1: #0A0D12;
+  --bg-2: #0F131C;
+  --accent: #38BDF8;
+  --error: #EF4444;
+  --warning: #F59E0B;
+  --success: #10B981;
+  --fg: #E5E7EB;
+  --muted: #9CA3AF;
+  --border: #374151;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg-0);
+  color: var(--fg);
+  padding: clamp(1rem, 3vw, 2rem);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 700;
+}
+
+.stats {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.875rem;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.graph-container {
+  width: 100%;
+  height: calc(100vh - 200px);
+  background: var(--bg-1);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.threshold-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--error);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.threshold-label {
+  position: absolute;
+  right: 10px;
+  font-size: 0.75rem;
+  color: var(--error);
+  background: var(--bg-0);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.event-indicator {
+  position: absolute;
+  width: 4px;
+  height: 100%;
+  background: var(--error);
+  opacity: 0;
+  animation: pulse-event 0.5s ease-out;
+  pointer-events: none;
+}
+
+@keyframes pulse-event {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.controls {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--fg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg-0);
+}
+
+.btn.active {
+  background: var(--accent);
+  color: var(--bg-0);
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="title">⚡ Live Sensor Feed — GPIO34</div>
+  <div class="stats">
+    <div class="stat-item">
+      <div class="stat-label">Hits</div>
+      <div class="stat-value" id="hitCount">0</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Peak</div>
+      <div class="stat-value" id="peakValue">0</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Avg Force</div>
+      <div class="stat-value" id="avgForce">0</div>
+    </div>
+  </div>
+</div>
+
+<div class="graph-container" id="graphContainer">
+  <canvas id="graph"></canvas>
+  <div class="controls">
+    <button class="btn active" id="btnConnect">🔴 LIVE</button>
+    <button class="btn" id="btnClear">Clear</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('graph');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('graphContainer');
+
+let dataPoints = [];
+const MAX_POINTS = 500;
+const THRESHOLD = 500;
+
+let hitCount = 0;
+let totalForce = 0;
+let maxPeak = 0;
+
+function resize() {
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function draw() {
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  ctx.fillStyle = '#0A0D12';
+  ctx.fillRect(0, 0, w, h);
+  
+  // Grid
+  ctx.strokeStyle = '#161D2B';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 10; i++) {
+    const y = (i / 10) * h;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
+  
+  // Threshold line
+  const thresholdY = h - (THRESHOLD / 4096) * h;
+  ctx.strokeStyle = '#EF4444';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath();
+  ctx.moveTo(0, thresholdY);
+  ctx.lineTo(w, thresholdY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Data
+  if (dataPoints.length > 1) {
+    ctx.strokeStyle = '#38BDF8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    
+    for (let i = 0; i < dataPoints.length; i++) {
+      const x = (i / MAX_POINTS) * w;
+      const y = h - (dataPoints[i] / 4096) * h;
+      
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    
+    ctx.stroke();
+    
+    // Fill gradient
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    const gradient = ctx.createLinearGradient(0, 0, 0, h);
+    gradient.addColorStop(0, 'rgba(56, 189, 248, 0.3)');
+    gradient.addColorStop(1, 'rgba(56, 189, 248, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fill();
+    
+    // Hit markers
+    ctx.fillStyle = '#EF4444';
+    for (let i = 0; i < dataPoints.length; i++) {
+      if (dataPoints[i] > THRESHOLD) {
+        const x = (i / MAX_POINTS) * w;
+        const y = h - (dataPoints[i] / 4096) * h;
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  
+  requestAnimationFrame(draw);
+}
+draw();
+
+function addDataPoint(value) {
+  dataPoints.push(value);
+  if (dataPoints.length > MAX_POINTS) {
+    dataPoints.shift();
+  }
+  
+  if (value > THRESHOLD) {
+    hitCount++;
+    totalForce += value;
+    maxPeak = Math.max(maxPeak, value);
+    
+    document.getElementById('hitCount').textContent = hitCount;
+    document.getElementById('peakValue').textContent = maxPeak;
+    document.getElementById('avgForce').textContent = Math.round(totalForce / hitCount);
+  }
+}
+
+// Real ESP32 WebSocket stream only. No simulation fallback.
+let ws;
+function connect() {
+  ws = new WebSocket('ws://127.0.0.1:8889');
+  ws.onopen = () => {
+    document.getElementById('btnConnect').textContent = '🟢 REAL SENSOR';
+  };
+  ws.onmessage = (e) => {
+    const sample = JSON.parse(e.data);
+    const value = Number(sample.current_a);
+    if (Number.isFinite(value)) addDataPoint(value);
+  };
+  ws.onerror = () => {
+    document.getElementById('btnConnect').textContent = '⚠ NO SENSOR DATA';
+  };
+  ws.onclose = () => {
+    document.getElementById('btnConnect').textContent = '⚠ DISCONNECTED';
+  };
+}
+
+connect();
+
+document.getElementById('btnClear').addEventListener('click', () => {
+  dataPoints = [];
+  hitCount = 0;
+  totalForce = 0;
+  maxPeak = 0;
+  document.getElementById('hitCount').textContent = '0';
+  document.getElementById('peakValue').textContent = '0';
+  document.getElementById('avgForce').textContent = '0';
+});
+
+// Start
+startSimulation();
+</script>
+
+</body>
+</html>

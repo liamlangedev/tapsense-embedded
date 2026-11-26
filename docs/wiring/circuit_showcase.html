@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ESP32 GPIO34 Current Sense</title>
+<style>
+:root{--bg:#081018;--panel:#101c28;--line:#9fb3c8;--text:#e8f0f7;--muted:#9db0c0;--cyan:#36d7ff;--green:#39d98a;--yellow:#ffd166;--red:#ff657a}
+*{box-sizing:border-box}body{margin:0;padding:24px;background:var(--bg);color:var(--text);font:16px system-ui,sans-serif}main{max-width:980px;margin:auto}.top{display:flex;justify-content:space-between;align-items:end;gap:16px;border-bottom:1px solid #294052;padding-bottom:18px}.eyebrow{color:var(--cyan);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}.subtitle{color:var(--muted);margin-top:6px}.grid{display:grid;grid-template-columns:1fr 280px;gap:18px;margin-top:18px}.card{background:var(--panel);border:1px solid #294052;border-radius:16px;padding:20px}.card h2{font-size:18px;margin:0 0 14px}.formula{font:700 22px ui-monospace,monospace;color:var(--green);background:#0a151a;border-radius:10px;padding:15px;text-align:center}.facts{display:grid;gap:12px;margin-top:16px}.fact{border-left:3px solid var(--cyan);padding-left:11px;color:var(--muted)}.fact b{color:var(--text)}.warning{border-color:#684b22;background:#211a0d;color:var(--yellow)}.danger{border-color:#6c2c3c;background:#211018;color:var(--red)}svg{display:block;width:100%;height:auto;background:#0b151e;border-radius:12px}.wire{stroke:var(--cyan);stroke-width:5;fill:none;stroke-linecap:round}.ground{stroke:var(--line);stroke-width:4}.component{fill:#192c3b;stroke:var(--line);stroke-width:2}.label{fill:var(--text);font:600 16px system-ui,sans-serif}.small{fill:var(--muted);font:14px system-ui,sans-serif}.value{fill:var(--green);font:700 16px ui-monospace,monospace}@media(max-width:760px){.grid{grid-template-columns:1fr}.top{display:block}}
+</style>
+</head>
+<body><main>
+<section class="top"><div><div class="eyebrow">ESP32 Mini · one sensor</div><h1>GPIO34 current-sense circuit</h1><div class="subtitle">Real ADC voltage every 100 ms — current calculated from the shunt resistor.</div></div><div class="eyebrow">NO MOCK DATA</div></section>
+<div class="grid">
+<section class="card"><h2>Recommended low-side shunt wiring</h2>
+<svg viewBox="0 0 760 430" role="img" aria-label="3.3 volt supply through sensor and shunt resistor to ground, GPIO34 measures the shunt voltage">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="var(--cyan)"/></marker></defs>
+<path class="wire" d="M105 80 V145"/><path class="wire" d="M105 235 V315 H655 V80"/><path class="wire" d="M105 315 V350"/>
+<path class="wire" d="M430 315 V365 H590 V150" marker-end="url(#arrow)"/>
+<path class="wire" d="M105 80 H655"/>
+<rect class="component" x="65" y="145" width="80" height="90" rx="10"/><text class="label" x="105" y="178" text-anchor="middle">SENSOR</text><text class="small" x="105" y="202" text-anchor="middle">or load</text>
+<path class="component" d="M70 315 l16 -18 l16 36 l16 -36 l16 36 l16 -18" fill="none"/><text class="label" x="215" y="310">R_SHUNT</text><text class="value" x="215" y="335">1.0 Ω example</text>
+<circle cx="430" cy="315" r="7" fill="var(--green)"/><text class="label" x="445" y="308">measurement node</text><text class="small" x="445" y="330">must stay ≤ 3.3 V</text>
+<rect class="component" x="535" y="105" width="110" height="90" rx="10"/><text class="label" x="590" y="140" text-anchor="middle">ESP32</text><text class="value" x="590" y="166" text-anchor="middle">GPIO34 / ADC</text>
+<text class="label" x="105" y="62" text-anchor="middle">+3.3 V</text><text class="label" x="105" y="390" text-anchor="middle">GND</text>
+<path class="ground" d="M80 350 H130 M88 360 H122 M97 370 H113"/>
+<path class="wire" d="M105 80 H655"/><text class="small" x="380" y="68" text-anchor="middle">power rail</text>
+<path class="wire" d="M655 80 V105"/>
+<text class="small" x="590" y="225" text-anchor="middle">common GND required</text>
+</svg>
+</section>
+<section class="card"><h2>What firmware reports</h2><div class="formula">I = V<sub>shunt</sub> / R<sub>shunt</sub></div><div class="facts"><div class="fact"><b>GPIO34</b><br>ADC input only; never use it to power the circuit.</div><div class="fact"><b>Example</b><br>0.120 V across 1.0 Ω = 0.120 A.</div><div class="fact"><b>Serial</b><br>One JSON reading every 100 ms at 115200 baud.</div><div class="fact warning"><b>Set the real value</b><br>Change <code>SHUNT_OHMS</code> to the resistor actually installed.</div></div></section>
+</div>
+<section class="card danger" style="margin-top:18px"><b>Safety / correctness:</b> Do not connect an unknown voltage or high-current load to GPIO34. Keep the ADC node between 0 V and 3.3 V, share GND, and use a proper current-sense amplifier for large current or a high-side measurement. A resistor alone cannot safely measure arbitrary current.</section>
+</main></body></html>
