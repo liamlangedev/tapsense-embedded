@@ -1,0 +1,147 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1320 1010" width="1320" height="1010" role="img" aria-label="TapSense system schematic: three FSR dividers into an Arduino Nano, Nano TX through a 1k/2k resistor divider into an ESP8266 access point, with a common ground rail">
+<style>
+svg{font-family:ui-sans-serif,system-ui,sans-serif}
+.box{fill:#16202e;stroke:#7d93ab;stroke-width:2}
+.inner{fill:#0e1723;stroke:#4b5f75;stroke-width:1.5;stroke-dasharray:6 5}
+.usb{fill:#1b2a1c;stroke:#5f9e63;stroke-width:2}
+.usblabel{fill:#b6e3b8;font:600 15px ui-sans-serif,system-ui}
+.wire{fill:none;stroke:#38bdf8;stroke-width:3.5;stroke-linejoin:round;stroke-linecap:round}
+.gnd{fill:none;stroke:#a78bfa;stroke-width:3.5;stroke-linecap:round}
+.gndsym{fill:none;stroke:#a78bfa;stroke-width:3;stroke-linecap:round}
+.res{fill:#1f2f42;stroke:#fbbf24;stroke-width:2.5}
+.arrow{fill:none;stroke:#fbbf24;stroke-width:2;stroke-linecap:round}
+.arrowhead{fill:#fbbf24;stroke:none}
+.node{fill:#38bdf8;stroke:none}
+.pinpt{fill:#cbd5e1;stroke:none}
+.pinframe{stroke:#64748b;stroke-width:1.5;stroke-dasharray:3 3}
+.legendbox{fill:#101a26;stroke:#3b4c61;stroke-width:1.5}
+.title{fill:#f8fafc;font:700 19px ui-sans-serif,system-ui}
+.sub{fill:#93a7bc;font:13px ui-sans-serif,system-ui}
+.pin{fill:#dbe6f1;font:14px ui-monospace,SFMono-Regular,monospace}
+.mono{fill:#8fb3d0;font:11.5px ui-monospace,monospace}
+.monosmall{fill:#8fb3d0;font:11px ui-monospace,monospace}
+.label{fill:#e2e8f0;font:14px ui-sans-serif,system-ui}
+.plabel{fill:#fcd34d;font:600 13px ui-monospace,monospace}
+.netsmall{fill:#7dd3fc;font:12px ui-monospace,monospace}
+.lgtitle{fill:#f8fafc;font:700 18px ui-sans-serif,system-ui}
+.lgtitle2{fill:#8fa3b8;font:600 11px ui-sans-serif,system-ui;letter-spacing:.12em}
+.legend{fill:#cbd5e1;font:13px ui-sans-serif,system-ui}
+</style>
+<rect x="0" y="0" width="1320" height="1010" fill="#0d1117"/>
+<text class="lgtitle" x="64" y="58" text-anchor="start">TapSense — sensing &amp; embedded link</text>
+<text class="sub" x="64" y="80" text-anchor="start">Nano → 1 kΩ/2 kΩ divider → ESP8266 access point</text>
+<rect class="usb" x="204" y="100" width="192" height="44" rx="8"/>
+<text class="usblabel" x="300" y="128" text-anchor="middle">USB 5 V — Nano</text>
+<path class="wire" d="M300 144 L300 170"/>
+<path class="wire" d="M100 170 L660 170"/>
+<path class="wire" d="M175 170 L175 188"/>
+<path class="wire" d="M300 170 L300 323"/>
+<path class="wire" d="M425 170 L425 458"/>
+<circle class="node" cx="300" cy="170" r="5"/>
+<path class="wire" d="M640 170 L640 200"/>
+<circle class="node" cx="640" cy="170" r="5"/>
+<rect class="res" x="158.0" y="188.0" width="34" height="64" rx="4"/>
+<path class="arrow" d="M146.0 246.0 L204.0 194.0"/><path class="arrowhead" d="M204.0 194.0 l-12 -1 l3 11 z"/>
+<path class="wire" d="M175 252 L175 290"/>
+<circle class="node" cx="175" cy="290" r="5"/>
+<rect class="res" x="158.0" y="312.0" width="34" height="96" rx="4"/>
+<text class="plabel" x="202.0" y="365" text-anchor="start">10 kΩ</text>
+<path class="wire" d="M175 408 L175 900"/>
+<path class="wire" d="M175 290L291 290A9 9 0 0 1 309 290L416 290A9 9 0 0 1 434 290L520 290"/>
+<text class="plabel" x="215" y="225" text-anchor="start">FSR</text>
+<text class="netsmall" x="221" y="281" text-anchor="start">Pad 1</text>
+<rect class="res" x="283.0" y="323.0" width="34" height="64" rx="4"/>
+<path class="arrow" d="M271.0 381.0 L329.0 329.0"/><path class="arrowhead" d="M329.0 329.0 l-12 -1 l3 11 z"/>
+<path class="wire" d="M300 387 L300 425"/>
+<circle class="node" cx="300" cy="425" r="5"/>
+<rect class="res" x="283.0" y="447.0" width="34" height="96" rx="4"/>
+<text class="plabel" x="327.0" y="500" text-anchor="start">10 kΩ</text>
+<path class="wire" d="M300 543 L300 900"/>
+<path class="wire" d="M300 425L416 425A9 9 0 0 1 434 425L520 425"/>
+<text class="plabel" x="340" y="360" text-anchor="start">FSR</text>
+<text class="netsmall" x="346" y="416" text-anchor="start">Pad 2</text>
+<rect class="res" x="408.0" y="458.0" width="34" height="64" rx="4"/>
+<path class="arrow" d="M396.0 516.0 L454.0 464.0"/><path class="arrowhead" d="M454.0 464.0 l-12 -1 l3 11 z"/>
+<path class="wire" d="M425 522 L425 560"/>
+<circle class="node" cx="425" cy="560" r="5"/>
+<rect class="res" x="408.0" y="582.0" width="34" height="96" rx="4"/>
+<text class="plabel" x="452.0" y="635" text-anchor="start">10 kΩ</text>
+<path class="wire" d="M425 678 L425 900"/>
+<path class="wire" d="M425 560L520 560"/>
+<text class="plabel" x="465" y="495" text-anchor="start">FSR</text>
+<text class="netsmall" x="471" y="551" text-anchor="start">Pad 3</text>
+<rect class="box" x="520" y="200" width="260" height="440" rx="14"/>
+<text class="title" x="650.0" y="232" text-anchor="middle">Arduino Nano</text>
+<text class="sub" x="650.0" y="256" text-anchor="middle">ATmega328P · 3-zone readout</text>
+<circle class="pinpt" cx="520" cy="290" r="4"/>
+<text class="pin" x="534" y="295" text-anchor="start">A0</text>
+<text class="monosmall" x="564" y="295" text-anchor="start">(Pad 1)</text>
+<circle class="pinpt" cx="520" cy="425" r="4"/>
+<text class="pin" x="534" y="430" text-anchor="start">A1</text>
+<text class="monosmall" x="564" y="430" text-anchor="start">(Pad 2)</text>
+<circle class="pinpt" cx="520" cy="560" r="4"/>
+<text class="pin" x="534" y="565" text-anchor="start">A2</text>
+<text class="monosmall" x="564" y="565" text-anchor="start">(Pad 3)</text>
+<circle class="pinpt" cx="640" cy="200" r="4"/>
+<text class="pin" x="656" y="190" text-anchor="start">5V</text>
+<circle class="pinpt" cx="640" cy="640" r="4"/>
+<text class="pin" x="656" y="666" text-anchor="start">GND</text>
+<path class="wire" d="M640 640 L640 900"/>
+<circle class="node" cx="640" cy="900" r="5"/>
+<circle class="pinpt" cx="780" cy="470" r="4"/>
+<text class="pin" x="766" y="460" text-anchor="end">D1 / TX</text>
+<path class="wire" d="M780 470 L820 470"/>
+<text class="sub" x="650.0" y="596" text-anchor="middle">50 Hz · labelled CSV</text>
+<text class="mono" x="650.0" y="618" text-anchor="middle">Pad1_A0:512,…</text>
+<rect class="res" x="820.0" y="452.0" width="100" height="36" rx="4"/>
+<text class="plabel" x="870" y="442.0" text-anchor="middle">1 kΩ</text>
+<path class="wire" d="M920 470 L960 470"/>
+<circle class="node" cx="960" cy="470" r="5"/>
+<rect class="res" x="943.0" y="502.0" width="34" height="96" rx="4"/>
+<text class="plabel" x="987.0" y="555" text-anchor="start">2 kΩ</text>
+<path class="wire" d="M960 470 L960 502"/>
+<path class="wire" d="M960 598 L960 900"/>
+<circle class="node" cx="960" cy="900" r="5"/>
+<path class="wire" d="M960 470 L1060 470"/>
+<text class="netsmall" x="788" y="456" text-anchor="start">5 V</text>
+<text class="netsmall" x="1002" y="494" text-anchor="start">≈ 3.3 V</text>
+<rect class="box" x="1060" y="200" width="232" height="440" rx="14"/>
+<text class="title" x="1176.0" y="232" text-anchor="middle">ESP8266</text>
+<text class="sub" x="1176.0" y="256" text-anchor="middle">FSR-Hub access point</text>
+<circle class="pinpt" cx="1060" cy="470" r="4"/>
+<text class="pin" x="1044" y="436" text-anchor="end">D7 / GPIO13 RX</text>
+<rect class="usb" x="1074" y="100" width="192" height="44" rx="8"/>
+<text class="usblabel" x="1170" y="128" text-anchor="middle">USB 5 V — ESP</text>
+<path class="wire" d="M1170 144 L1170 200"/>
+<circle class="pinpt" cx="1170" cy="200" r="4"/>
+<text class="pin" x="1188" y="190" text-anchor="start">VIN</text>
+<circle class="pinpt" cx="1170" cy="640" r="4"/>
+<text class="pin" x="1188" y="666" text-anchor="start">GND</text>
+<path class="wire" d="M1170 640 L1170 900"/>
+<circle class="node" cx="1170" cy="900" r="5"/>
+<rect class="inner" x="1078" y="440" width="196" height="168" rx="10"/>
+<text class="sub" x="1176.0" y="466" text-anchor="middle">on-board SSD1306</text>
+<text class="monosmall" x="1176.0" y="488" text-anchor="middle">SCL = D5 / GPIO14</text>
+<text class="monosmall" x="1176.0" y="506" text-anchor="middle">SDA = D6 / GPIO12</text>
+<text class="monosmall" x="1176.0" y="538" text-anchor="middle">SSID  FSR-Hub</text>
+<text class="monosmall" x="1176.0" y="556" text-anchor="middle">fsr-sensor</text>
+<text class="monosmall" x="1176.0" y="582" text-anchor="middle">http://192.168.4.1</text>
+<path class="gnd" d="M80 900 L1270 900"/>
+<path class="gndsym" d="M161 900 H189 M166 908 H184 M171 916 H179"/>
+<path class="gndsym" d="M411 900 H439 M416 908 H434 M421 916 H429"/>
+<path class="gndsym" d="M626 900 H654 M631 908 H649 M636 916 H644"/>
+<path class="gndsym" d="M946 900 H974 M951 908 H969 M956 916 H964"/>
+<path class="gndsym" d="M1256 900 H1284 M1261 908 H1279 M1266 916 H1274"/>
+<text class="netsmall" x="100" y="944" text-anchor="start">COMMON GROUND — Nano GND ↔ ESP GND</text>
+<path class="wire" d="M100 982 H146"/>
+<text class="legend" x="158" y="987" text-anchor="start">signal</text>
+<path class="wire" d="M360 982 L377 982A9 9 0 0 1 395 982L406 982"/>
+<text class="legend" x="418" y="987" text-anchor="start">crossing — not connected</text>
+<rect class="res" x="704" y="971" width="40" height="22" rx="3"/>
+<text class="legend" x="758" y="987" text-anchor="start">resistor</text>
+<path class="gndsym" d="M948 976 H976 M953 984 H971 M958 992 H966"/>
+<text class="legend" x="998" y="987" text-anchor="start">ground</text>
+<rect class="res" x="1144" y="971" width="40" height="22" rx="3"/>
+<path class="arrow" d="M1134 994 L1194 968"/>
+<text class="legend" x="1198" y="987" text-anchor="start">force sensor</text>
+</svg>

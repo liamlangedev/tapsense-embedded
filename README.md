@@ -27,6 +27,8 @@ chain, from the force sensor up to the Raspberry Pi dashboard.
   Raspberry Pi          bridge + dashboard, hands events to the drone / C2 side
 ```
 
+![TapSense system schematic](docs/wiring/tapsense-system.svg)
+
 Each hop is deliberately dumb. The Nano only samples. The ESP only parses and serves.
 The Pi only decides what an event means. That kept the failure surface small across
 three boards in 48 hours.
@@ -61,8 +63,9 @@ resistor to GND; the junction goes to the analog pin. Nano `D1/TX` reaches the E
 `D7` (GPIO13) through a **1 kΩ / 2 kΩ divider** — the Nano drives 5 V and the ESP8266
 is 3.3 V only. Never feed 5 V logic straight into the ESP.
 
-The full diagrams live in [`docs/wiring/`](docs/wiring/) — open the HTML files
-directly in a browser.
+The full diagrams live in [`docs/wiring/`](docs/wiring/) — start with
+[`tapsense-system.html`](docs/wiring/tapsense-system.html) (or open any HTML file in a
+browser), and regenerate the schematic with `python3 tools/gen_schematic.py`.
 
 ---
 
