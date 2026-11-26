@@ -41,6 +41,7 @@ const int IMPACT_DELTA_MED = 320;      // medium severity threshold
 const int IMPACT_DELTA_HIGH = 600;     // high severity threshold
 const unsigned long IMPACT_WINDOW_MS = 80;    // peak integration window
 const unsigned long IMPACT_COOLDOWN_MS = 450; // refractory period
+const unsigned long UNRESPONSIVE_ESCALATION_MS = 10000; // auto-medevac if no tap after HIGH impact
 
 // Plate-carrier tap parameters
 const int TAP_PRESS_THRESHOLD = 150;
@@ -84,6 +85,7 @@ long peakN = 0, peakE = 0, peakS = 0, peakW = 0;
 // Last recorded helmet impact (attached to subsequent gesture dispatches)
 bool hasLastImpact = false;
 unsigned long lastConfirmedImpactMs = 0;
+bool pendingEscalation = false;
 int16_t lastImpactDeg = -1;
 char lastImpactCardinal[4] = "-";
 int16_t lastImpactPeak = 0;
@@ -327,6 +329,7 @@ void finalizeImpact(unsigned long now) {
 
   hasLastImpact = true;
   lastConfirmedImpactMs = now;
+  pendingEscalation = (strcmp(sev, "HIGH") == 0);
   lastImpactDeg = deg;
   strcpy(lastImpactCardinal, card);
   lastImpactPeak = static_cast<int16_t>(maxPeak);
@@ -386,6 +389,7 @@ void processHelmetSample(long n, long e, long s, long w) {
 void processPlateTap(long value) {
   const unsigned long now = millis();
   if (!tapDown && value >= TAP_PRESS_THRESHOLD) {
+    pendingEscalation = false;  // soldier is responsive
     if (!tapCount || now - lastTapAt > TAP_GAP_MS) {
       tapCount = 0;
     }
@@ -560,8 +564,24 @@ void setup() {
   server.begin();
 }
 
+void checkUnresponsiveEscalation() {
+  if (!pendingEscalation) return;
+  const unsigned long now = millis();
+  if (now - lastConfirmedImpactMs >= UNRESPONSIVE_ESCALATION_MS) {
+    pendingEscalation = false;
+    strncpy(lastGestureType, "auto_medevac_unresponsive", sizeof(lastGestureType) - 1);
+    lastGestureType[sizeof(lastGestureType) - 1] = '\0';
+    pushEvent("AUTO_ESCALATION", "auto_medevac_unresponsive", 0,
+              lastImpactDeg, lastImpactCardinal, lastImpactPeak,
+              lastImpactSeverity, lastImpactConfidence,
+              static_cast<long>(now - lastConfirmedImpactMs));
+    updateOled();
+  }
+}
+
 void loop() {
   handleSerial();
+  checkUnresponsiveEscalation();
   if (millis() - lastOledAt >= 1000) {
     lastOledAt = millis();
     updateOled();

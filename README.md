@@ -49,9 +49,15 @@ extends the demo chain to two combined wearables:
 - **Plate Carrier Tap Pad (`A4`):** chest/shoulder gesture trigger classifying 2, 3, or 4
   taps (`critical_situation`, `medical_supply_drone_request`, `backup_resupply_request`).
   Every gesture event automatically attaches the latest helmet impact vector.
+- **Unresponsive Auto-Medevac Escalation:** if a `HIGH`-severity helmet hit is not
+  acknowledged by any plate tap within 10 seconds, the ESP8266 automatically emits an
+  `auto_medevac_unresponsive` dispatch event with the impact direction and force.
 - **Store-and-Forward Ring Buffer (`GET /events?since=<id>`):** 16-slot event queue on
   the ESP8266 so the Raspberry Pi consumer (`pi/tapsense_pi_client.py`) recovers missed
   events after temporary Wi-Fi dropouts.
+- **Interactive Browser Simulator (`tools/sim_v2_hub.py`):** mirrors the exact v2 HTTP
+  contract (`/`, `/data`, `/events`) locally so anyone can trigger impacts, taps, and
+  auto-medevac escalation right in the browser without hardware connected.
 
 ---
 
@@ -115,6 +121,14 @@ arduino-cli upload  --fqbn esp8266:esp8266:nodemcuv2 --port /dev/ttyUSB1 firmwar
 > Disconnect the Nano TX line while flashing the ESP8266 over USB so the divider does
 > not interfere with the serial programmer.
 
+**Interactive v2 browser simulator (no hardware required):**
+
+```bash
+python3 tools/sim_v2_hub.py
+# open http://127.0.0.1:8080/ and optionally pair with the Pi client:
+python3 pi/tapsense_pi_client.py --hub http://127.0.0.1:8080
+```
+
 **Raspberry Pi consumer (v2):**
 
 ```bash
@@ -131,6 +145,7 @@ python3 pi/tapsense_pi_client.py --hub http://192.168.4.1 --drone-url http://127
 
 | Tool | What it does |
 |---|---|
+| `tools/sim_v2_hub.py` | Interactive v2 browser simulator (compass, 5-ch waveforms, auto-medevac) |
 | `tools/fsr_plotter.py` | matplotlib single-pad plotter, 200-sample rolling window, auto port detect |
 | `tools/fsr_status_window.py` | Tkinter window — Zone 1 pressure level + ADC history graph |
 | `tools/fsr_onoff.py` | Tkinter ON/OFF trace with threshold line, hot-reconnect |

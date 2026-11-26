@@ -171,6 +171,7 @@ Returns all buffered events from the 16-slot ring buffer with `id > since`:
 ```
 
 `pi/tapsense_pi_client.py` polls this endpoint, persists each event to JSONL, and
-forwards `GESTURE` missions (including the attached `helmet_impact` vector) to the
-autonomous drone / C2 webhook.
+forwards `GESTURE` and `AUTO_ESCALATION` (`auto_medevac_unresponsive`, triggered if a
+`HIGH`-severity helmet hit goes 10 s without a plate acknowledgment) missions—including
+the attached `helmet_impact` vector—to the autonomous drone / C2 webhook.
 

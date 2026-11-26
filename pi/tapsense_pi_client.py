@@ -63,10 +63,15 @@ def handle_event(ev: dict, log_path: Path, drone_url: str | None) -> None:
     with log_path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(ev) + "\n")
 
-    if ev.get("kind") == "GESTURE" and ev.get("event_type") in (
-        "critical_situation",
-        "medical_supply_drone_request",
-        "backup_resupply_request",
+    if (
+        ev.get("kind") in ("GESTURE", "AUTO_ESCALATION")
+        and ev.get("event_type")
+        in (
+            "critical_situation",
+            "medical_supply_drone_request",
+            "backup_resupply_request",
+            "auto_medevac_unresponsive",
+        )
     ):
         dispatch_payload = {
             "source": "tapsense_v2",
