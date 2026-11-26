@@ -140,11 +140,17 @@ canvas{display:block;margin:8px auto;background:#0b121c;border:1px solid #2d3a4f
     <div class="mono" id="events" style="margin-top:6px;max-height:150px;overflow:auto">—</div>
   </div>
 </div>
+<div class="card" style="margin-top:14px">
+  <div><strong>Live Force Waveforms (0–1023)</strong> · <span class="mono">N=cyan E=green S=amber W=violet Plate=pink</span></div>
+  <canvas id="wave" width="820" height="210" style="width:100%;height:210px"></canvas>
+</div>
 <script>
 const st=document.getElementById('status'),hi=document.getElementById('helmetInfo'),
       pi=document.getElementById('plateInfo'),ge=document.getElementById('gesture'),
-      ev=document.getElementById('events'),cv=document.getElementById('compass'),ctx=cv.getContext('2d');
-let lastSeenId=0, log=[];
+      ev=document.getElementById('events'),cv=document.getElementById('compass'),ctx=cv.getContext('2d'),
+      wv=document.getElementById('wave'),wctx=wv.getContext('2d');
+let lastSeenId=0, log=[], hist=[[],[],[],[],[]];
+const cols=['#38bdf8','#34d399','#fbbf24','#a78bfa','#f472b6'];
 
 function drawCompass(deg, card, n, e, s, w){
   const cx=110, cy=110, r=82;
@@ -164,6 +170,24 @@ function drawCompass(deg, card, n, e, s, w){
   }
 }
 
+function drawWaves(){
+  const w=wv.width, h=wv.height, top=14, bot=h-20;
+  wctx.clearRect(0,0,w,h);
+  wctx.strokeStyle='#334155'; wctx.beginPath();
+  wctx.moveTo(40,top); wctx.lineTo(40,bot); wctx.lineTo(w-8,bot); wctx.stroke();
+  wctx.fillStyle='#94a3b8'; wctx.font='11px ui-monospace,monospace';
+  wctx.fillText('1023',4,top+8); wctx.fillText('0',24,bot);
+  hist.forEach((arr,ci)=>{
+    if(arr.length<2)return;
+    wctx.strokeStyle=cols[ci]; wctx.lineWidth=2; wctx.beginPath();
+    arr.forEach((v,i)=>{
+      const x=40+i*(w-50)/149, y=bot-(Math.min(1023,Math.max(0,v))/1023)*(bot-top);
+      i?wctx.lineTo(x,y):wctx.moveTo(x,y);
+    });
+    wctx.stroke();
+  });
+}
+
 async function poll(){
   try{
     const r=await fetch('/data',{cache:'no-store'});
@@ -172,8 +196,12 @@ async function poll(){
       const d=await r.json();
       st.textContent='Live · FSR-Hub (192.168.4.1)';
       drawCompass(d.helmet.direction_deg, d.helmet.cardinal, d.helmet.n, d.helmet.e, d.helmet.s, d.helmet.w);
+      [d.helmet.n,d.helmet.e,d.helmet.s,d.helmet.w,d.plate.a4].forEach((v,i)=>{
+        hist[i].push(v); if(hist[i].length>150) hist[i].shift();
+      });
+      drawWaves();
       hi.textContent=`Peak: ${d.helmet.peak} | Sev: ${d.helmet.severity} | Conf: ${d.helmet.confidence}%`;
-      pi.textContent=`A4: ${d.plate.a4} · ${d.plate.pressed?'PRESSED':'IDLE'}`;
+      pi.textContent=`A4: ${d.plate.a4}/1023 · ${d.plate.pressed?'PRESSED':'IDLE'}`;
       ge.textContent=d.gesture.event_type.toUpperCase();
     }
     const er=await fetch('/events?since='+lastSeenId,{cache:'no-store'});
@@ -187,7 +215,7 @@ async function poll(){
       if(log.length) ev.innerHTML=log.map(x=>`<div>${x}</div>`).join('');
     }
   }catch(err){st.textContent='Disconnected ('+err.message+')';}
-  setTimeout(poll,120);
+  setTimeout(poll,90);
 }
 poll();
 </script></body></html>)HTML";
