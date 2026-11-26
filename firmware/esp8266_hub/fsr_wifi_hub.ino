@@ -50,22 +50,16 @@ long latestA0 = 0;
 
 const char page[] PROGMEM = R"HTML(<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TapSense FSR Live (Analog)</title><style>
+<title>Nano FSR live</title><style>
 body{font:16px sans-serif;max-width:760px;margin:24px auto;padding:0 12px;background:#111827;color:#eee}
-.row{display:flex;align-items:baseline;gap:14px;margin:8px 0}
-.value{font-size:2rem;font-weight:700;color:#38bdf8}
-.barbg{height:12px;background:#1e293b;border-radius:6px;overflow:hidden;margin:8px 0 14px}
-.bar{height:100%;width:0%;background:linear-gradient(90deg,#38bdf8,#fbbf24,#ef4444);transition:width 60ms linear}
-canvas{width:100%;height:280px;border:1px solid #475569;border-radius:8px;background:#0f172a}
-</style></head><body><h1>TapSense FSR Live</h1><div id="status">Connecting to NodeMCU…</div>
-<div class="row"><span>A0: <span class="value" id="value">—</span>/1023</span><span id="state">Waiting</span></div>
-<div class="barbg"><div class="bar" id="bar"></div></div>
+.value{font-size:2rem}canvas{width:100%;height:280px;border:1px solid #64748b}
+</style></head><body><h1>FSR on/off</h1><div id="status">Connecting to NodeMCU…</div>
+<div>Sensor A0: <span class="value" id="value">—</span> · <span id="state">Waiting</span></div>
 <canvas id="graph" width="760" height="280"></canvas>
 <script>
-const status=document.getElementById('status'),value=document.getElementById('value'),state=document.getElementById('state'),bar=document.getElementById('bar'),canvas=document.getElementById('graph'),ctx=canvas.getContext('2d'),samples=[];
-function band(v){if(v<80)return'IDLE';if(v<150)return'TOUCH';if(v<400)return'LIGHT';if(v<720)return'MEDIUM';return'HARD';}
-async function poll(){try{const r=await fetch('/data',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const d=await r.json();const v=Math.max(0,Math.min(1023,d.a0));status.textContent='Live';value.textContent=v;state.textContent=band(v)+' ('+Math.round(v*100/1023)+'%)';bar.style.width=(v*100/1023).toFixed(1)+'%';samples.push(v);if(samples.length>150)samples.shift();draw();}catch(e){status.textContent='Waiting for sensor data ('+e.message+')';}setTimeout(poll,80);}
-function draw(){const w=canvas.width,h=canvas.height,top=18,bottom=h-26,thY=bottom-(150/1023)*(bottom-top);ctx.clearRect(0,0,w,h);ctx.strokeStyle='#475569';ctx.beginPath();ctx.moveTo(44,top);ctx.lineTo(44,bottom);ctx.lineTo(w-8,bottom);ctx.stroke();ctx.setLineDash([5,5]);ctx.strokeStyle='#f59e0b88';ctx.beginPath();ctx.moveTo(44,thY);ctx.lineTo(w-8,thY);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#94a3b8';ctx.font='12px monospace';ctx.fillText('1023',6,top+6);ctx.fillText('150',12,thY+4);ctx.fillText('0',26,bottom);ctx.strokeStyle='#38bdf8';ctx.lineWidth=2.5;ctx.beginPath();samples.forEach((v,i)=>{const x=44+i*(w-54)/149,y=bottom-(v/1023)*(bottom-top);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();}
+const status=document.getElementById('status'),value=document.getElementById('value'),state=document.getElementById('state'),canvas=document.getElementById('graph'),ctx=canvas.getContext('2d'),samples=[];
+async function poll(){try{const r=await fetch('/data',{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);const d=await r.json();status.textContent='Live';value.textContent=d.a0;state.textContent=d.pressed?'ON':'OFF';samples.push(d.pressed?1:0);if(samples.length>150)samples.shift();draw();}catch(e){status.textContent='Waiting for sensor data ('+e.message+')';}setTimeout(poll,100);}
+function draw(){const w=canvas.width,h=canvas.height,top=24,bottom=h-30;ctx.clearRect(0,0,w,h);ctx.strokeStyle='#64748b';ctx.beginPath();ctx.moveTo(40,top);ctx.lineTo(40,bottom);ctx.lineTo(w-8,bottom);ctx.stroke();ctx.fillStyle='#cbd5e1';ctx.fillText('ON',8,top+5);ctx.fillText('OFF',8,bottom);ctx.strokeStyle='#38bdf8';ctx.beginPath();samples.forEach((v,i)=>{const x=40+i*(w-50)/149,y=v?top:bottom;if(i===0)ctx.moveTo(x,y);else{ctx.lineTo(x,samples[i-1]?top:bottom);ctx.lineTo(x,y);}});ctx.stroke();}
 poll();
 </script></body></html>)HTML";
 
