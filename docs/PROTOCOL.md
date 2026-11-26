@@ -102,5 +102,75 @@ connect to that socket.
 mounting the boot partition at byte offset `8388608` and rewriting `network-config`,
 so a fresh Pi joins the hub on first boot with no monitor or keyboard.
 
-> The access-point name in that script is still the placeholder `Netzwerk`. Point it
-> at `FSR-Hub` (or whatever SSID you actually run) before flashing an image.
+## 5. Target architecture v2 (`firmware/v2_helmet_plate/`)
+
+The v2 firmware extends the protocol to a 4-zone directional helmet array (`A0`–`A3`)
+plus a dedicated plate-carrier tap pad (`A4`).
+
+### Nano → ESP8266 CSV (100 Hz, 115200 8N1)
+
+```
+H_N:18,H_E:420,H_S:12,H_W:15,P_TAP:0
+```
+
+- `H_N` (`A0`, 0° Front), `H_E` (`A1`, 90° Right), `H_S` (`A2`, 180° Back), `H_W` (`A3`, 270° Left)
+- `P_TAP` (`A4`, chest/shoulder gesture pad)
+
+### `GET /data` (v2)
+
+Returns the current 5-channel snapshot, latest computed helmet impact vector, and
+latest plate gesture state:
+
+```json
+{
+  "helmet": {
+    "n": 18, "e": 420, "s": 12, "w": 15,
+    "direction_deg": 89, "cardinal": "E",
+    "peak": 405, "severity": "MEDIUM", "confidence": 88
+  },
+  "plate": { "a4": 0, "pressed": false },
+  "gesture": { "tap_count": 3, "event_type": "medical_supply_drone_request" }
+}
+```
+
+### `GET /events?since=<id>` (v2 store-and-forward)
+
+Returns all buffered events from the 16-slot ring buffer with `id > since`:
+
+```json
+{
+  "events": [
+    {
+      "id": 1,
+      "ts_ms": 1420,
+      "kind": "HELMET_IMPACT",
+      "event_type": "helmet_impact_detected",
+      "tap_count": 0,
+      "direction_deg": 48,
+      "cardinal": "NE",
+      "peak_force": 512,
+      "severity": "MEDIUM",
+      "confidence": 87,
+      "impact_age_ms": 0
+    },
+    {
+      "id": 2,
+      "ts_ms": 3890,
+      "kind": "GESTURE",
+      "event_type": "medical_supply_drone_request",
+      "tap_count": 3,
+      "direction_deg": 48,
+      "cardinal": "NE",
+      "peak_force": 512,
+      "severity": "MEDIUM",
+      "confidence": 87,
+      "impact_age_ms": 2470
+    }
+  ]
+}
+```
+
+`pi/tapsense_pi_client.py` polls this endpoint, persists each event to JSONL, and
+forwards `GESTURE` missions (including the attached `helmet_impact` vector) to the
+autonomous drone / C2 webhook.
+

@@ -5,33 +5,53 @@
 When a soldier is pinned down or injured, reaching for a radio or a tactical device
 is not always an option. TapSense turns a physical gesture on the gear itself into an
 automatic request: tap the sensor pad, and the system dispatches an autonomous medical
-supply drone or calls a medevac unit — with impact data attached to the location.
+supply drone or calls a medevac unit — with helmet impact data attached to the location.
 
-This repository is **my part of the build**: the sensing and embedded communication
-chain, from the force sensor up to the Raspberry Pi dashboard.
+This repository covers **the sensing and embedded communication stack**, from the
+CurveSYS force sensors through the microcontroller nodes up to the Raspberry Pi.
 
 ---
 
-## The chain
+## System overview
+
+### 1. Stage Demo (v1 — ran live at EDTH)
 
 ```
   CurveSYS force sensor (FSR)
-            │  analog
+            │  analog (A0/A1/A2)
             ▼
-  Arduino Nano          reads 3 zones, emits labelled CSV @ 115200
-            │  UART (through a 5 V → 3.3 V divider)
+  Arduino Nano          samples zones at 50 Hz, emits labelled CSV @ 115200
+            │  UART (5 V → 3.3 V divider)
             ▼
-  ESP8266 Hub           own Wi-Fi AP, parses the stream, serves HTTP + OLED
-            │  Wi-Fi  (SSID "FSR-Hub")
+  ESP8266 Hub           own Wi-Fi AP ("FSR-Hub"), parses stream, serves HTTP + OLED
+            │  Wi-Fi (192.168.4.1)
             ▼
-  Raspberry Pi          bridge + dashboard, hands events to the drone / C2 side
+  Raspberry Pi          joins AP, polls /data, forwards to drone / C2
 ```
 
-![TapSense system schematic](docs/wiring/tapsense-system.svg)
+![TapSense v1 wiring schematic](docs/wiring/tapsense-system.svg)
 
-Each hop is deliberately dumb. The Nano only samples. The ESP only parses and serves.
-The Pi only decides what an event means. That kept the failure surface small across
-three boards in 48 hours.
+Each hop has a single responsibility: the Nano only samples, the ESP8266 only parses
+and serves, and the Pi handles mission dispatch. Keeping the nodes decoupled made it
+fast to iterate and debug under hackathon constraints.
+
+### 2. Target Architecture (v2 — 4-Zone Directional Helmet + Plate Carrier)
+
+![TapSense v2 target architecture](docs/wiring/tapsense-helmet-plate.svg)
+
+The full target implementation in [`firmware/v2_helmet_plate/`](firmware/v2_helmet_plate/)
+extends the demo chain to two combined wearables:
+
+- **4-Zone Helmet Array (`A0`–`A3`):** orthogonal CurveSYS FSR zones (`N / E / S / W` at
+  0°, 90°, 180°, 270°) sampled at **100 Hz**. Adaptive EMA baseline tracking filters
+  slow strap tension and leaning, while sharp impacts compute a vector angle (`0–359°`),
+  cardinal direction, severity (`LOW` / `MEDIUM` / `HIGH`), and confidence score.
+- **Plate Carrier Tap Pad (`A4`):** chest/shoulder gesture trigger classifying 2, 3, or 4
+  taps (`critical_situation`, `medical_supply_drone_request`, `backup_resupply_request`).
+  Every gesture event automatically attaches the latest helmet impact vector.
+- **Store-and-Forward Ring Buffer (`GET /events?since=<id>`):** 16-slot event queue on
+  the ESP8266 so the Raspberry Pi consumer (`pi/tapsense_pi_client.py`) recovers missed
+  events after temporary Wi-Fi dropouts.
 
 ---
 
@@ -39,13 +59,15 @@ three boards in 48 hours.
 
 | Path | What |
 |---|---|
-| `firmware/nano_fsr_3zone/` | Arduino Nano sketch — 3-zone FSR sampling, labelled CSV output |
-| `firmware/esp8266_hub/` | ESP8266 sketch — access point, serial parser, HTTP endpoints, OLED UI |
-| `pi/` | Raspberry Pi side — serial→WebSocket bridge, live dashboards, Wi-Fi image config |
-| `tools/` | Host-side plotters and monitors (Tkinter, terminal, matplotlib) |
-| `docs/wiring/` | Interactive SVG wiring diagrams (open in a browser) |
-| `docs/PROTOCOL.md` | Wire formats and the HTTP API |
-| `archive/helmet-track/` | Abandoned first approach — CurveSYS helmet impact detection |
+| `firmware/nano_fsr_3zone/` | **v1 Demo:** Arduino Nano 3-zone FSR sampling, labelled CSV output |
+| `firmware/esp8266_hub/` | **v1 Demo:** ESP8266 AP, serial parser, HTTP `/data`, OLED UI |
+| `firmware/v2_helmet_plate/` | **v2 Target:** 4-zone directional helmet + plate carrier firmware (Nano + ESP8266) |
+| `pi/` | Raspberry Pi consumer (`tapsense_pi_client.py`), WebSocket bridge, dashboards, Wi-Fi config |
+| `tools/` | Host-side plotters, monitors, `flash.sh`, and schematic generators |
+| `docs/wiring/` | SVG + HTML wiring schematics (`tapsense-system.*`, `tapsense-helmet-plate.*`) |
+| `docs/PROTOCOL.md` | Wire formats, v1/v2 HTTP endpoints, and event schemas |
+| `docs/ARCHITECTURE.md` | Hardware design decisions and latency/bandwidth budget |
+| `archive/helmet-track/` | Early CurveSYS helmet-impact prototype & signal processing reference |
 
 ---
 
@@ -53,55 +75,55 @@ three boards in 48 hours.
 
 | Board | Role | Notes |
 |---|---|---|
-| Arduino Nano (ATmega328P) | Sensor readout | 3 analog zones on A0/A1/A2, 10 kΩ pulldown per zone |
-| ESP8266 (NodeMCU, e.g. Ideaspark) | Wi-Fi hub | Built-in SSD1306 OLED on D5/D6, Nano input on D7 |
-| Raspberry Pi | Bridge + dashboard | Joins `FSR-Hub`, runs the bridge |
-| CurveSYS multi-zone force sensor | Sensing element | Flexible force/deflection film, analog readout |
+| Arduino Nano (ATmega328P) | Sensor readout | 3–5 analog channels (`A0`–`A4`), 10 kΩ pulldown per zone |
+| ESP8266 (NodeMCU / Ideaspark) | Wi-Fi hub | Built-in SSD1306 OLED (`D5`/`D6`), Nano RX on `D7` (GPIO13) |
+| Raspberry Pi | Base / C2 relay | Joins `FSR-Hub`, runs `tapsense_pi_client.py` |
+| CurveSYS multi-zone FSR | Sensing element | Flexible force/deflection film, analog voltage-divider readout |
 
-**Wiring, in one line:** each FSR sits in a voltage divider between 3V3/5V and a 10 kΩ
-resistor to GND; the junction goes to the analog pin. Nano `D1/TX` reaches the ESP
-`D7` (GPIO13) through a **1 kΩ / 2 kΩ divider** — the Nano drives 5 V and the ESP8266
-is 3.3 V only. Never feed 5 V logic straight into the ESP.
+**Voltage divider (mandatory):** each FSR sits in a `5 V → FSR → Ax → 10 kΩ → GND`
+divider. Nano `D1/TX` (5 V logic) connects to ESP `D7` (3.3 V logic) through a
+**1 kΩ / 2 kΩ resistor divider** with a shared ground rail.
 
-The full diagrams live in [`docs/wiring/`](docs/wiring/) — start with
-[`tapsense-system.html`](docs/wiring/tapsense-system.html) (or open any HTML file in a
-browser), and regenerate the schematic with `python3 tools/gen_schematic.py`.
+Regenerate the schematics anytime with:
+
+```bash
+python3 tools/gen_schematic.py
+python3 tools/gen_schematic_v2.py
+```
 
 ---
 
-## Flashing
+## Flashing & running
 
-Install `arduino-cli`, then:
+Install `arduino-cli`, then compile and upload either v1 (stage demo) or v2 (helmet + plate):
 
 ```bash
-# Nano
+# Nano (v2 5-channel helmet + plate)
 arduino-cli core install arduino:avr
-arduino-cli compile --fqbn arduino:avr:nano firmware/nano_fsr_3zone
-arduino-cli upload  --fqbn arduino:avr:nano --port /dev/ttyUSB0 firmware/nano_fsr_3zone
+arduino-cli compile --fqbn arduino:avr:nano firmware/v2_helmet_plate/nano_helmet_plate
+arduino-cli upload  --fqbn arduino:avr:nano --port /dev/ttyUSB0 firmware/v2_helmet_plate/nano_helmet_plate
 
-# ESP8266 (needs the ESP8266 core + U8g2)
+# ESP8266 Hub (v2)
 arduino-cli config add board_manager.additional_urls \
   https://arduino.esp8266.com/stable/package_esp8266com_index.json
 arduino-cli core install esp8266:esp8266
 arduino-cli lib install U8g2
-arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 firmware/esp8266_hub
-arduino-cli upload  --fqbn esp8266:esp8266:nodemcuv2 --port /dev/ttyUSB1 firmware/esp8266_hub
+arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 firmware/v2_helmet_plate/esp8266_helmet_plate_hub
+arduino-cli upload  --fqbn esp8266:esp8266:nodemcuv2 --port /dev/ttyUSB1 firmware/v2_helmet_plate/esp8266_helmet_plate_hub
 ```
 
-Disconnect the Nano TX line while uploading the ESP — `D7` is shared with the USB
-programming path, and the divider fights the programmer otherwise.
+> Disconnect the Nano TX line while flashing the ESP8266 over USB so the divider does
+> not interfere with the serial programmer.
 
-**Then, from the Pi (or any laptop):**
+**Raspberry Pi consumer (v2):**
 
 ```bash
-./pi/test_fsr_hub.sh          # joins "FSR-Hub", curls the endpoint
-# or by hand:
-curl http://192.168.4.1/data   # -> {"a0":512,"pressed":true}
-xdg-open http://192.168.4.1/   # live on/off graph
-```
+# Test offline without hardware:
+python3 pi/tapsense_pi_client.py --sim
 
-Credentials are intentionally committed: `FSR-Hub` / `fsr-sensor`. It is a demo
-hotspot with no backhaul — nothing to protect. Change them if you ever reuse this.
+# Run against live ESP8266 hub (after joining Wi-Fi "FSR-Hub" / "fsr-sensor"):
+python3 pi/tapsense_pi_client.py --hub http://192.168.4.1 --drone-url http://127.0.0.1:9000/dispatch
+```
 
 ---
 
@@ -112,51 +134,37 @@ hotspot with no backhaul — nothing to protect. Change them if you ever reuse t
 | `tools/fsr_plotter.py` | matplotlib single-pad plotter, 200-sample rolling window, auto port detect |
 | `tools/fsr_status_window.py` | Tkinter window — Zone 1 pressure level + ADC history graph |
 | `tools/fsr_onoff.py` | Tkinter ON/OFF trace with threshold line, hot-reconnect |
-| `tools/fsr_tui.py` | Zero-dependency-ish terminal view of the A0 state |
+| `tools/fsr_tui.py` | Terminal live view of the A0 state |
 | `tools/fsr_capture_plot.py` | Replays a captured `fsr_raw.log` while it grows |
-| `pi/sensor_monitor.py` | Prints only real readings — never invents a number |
+| `pi/tapsense_pi_client.py` | Store-and-forward `/events` poller + drone dispatch webhook |
+| `pi/sensor_monitor.py` | Strict serial monitor — prints `NO_DATA` instead of inventing values |
 | `pi/sensor_bridge.py` | Serial → WebSocket bridge on `127.0.0.1:8889` |
 | `pi/live_graph.html`, `pi/dashboard.html` | Browser dashboards fed by the bridge |
 
-A rule we kept throughout: **no mock data in the demo path.** The monitors print
-`NO_DATA` rather than a fabricated zero. Several of the tools carry that in their
-docstring because we lost an hour to a plotter that looked fine while reading the
-wrong port.
-
 ---
 
-## What actually worked, and what didn't
+## Demo vs. v2 status
 
-Honest status, because a hackathon repo that pretends everything shipped is useless.
-
-**Worked on stage:** Nano reads all three FSR zones, the ESP8266 parses the stream,
-brings up its own access point, serves the live graph, and classifies 2/3/4 taps into
-critical / medical-drone / backup requests, shown on the OLED. The Pi consumed the
-same `/data` endpoint. The whole thing ran the demo.
-
-**Known gap:** the tap→event classification is computed on the ESP and shown on the
-OLED, but the `/data` JSON only exposes `a0` and `pressed`. The richer event packet
-(`tap_count`, `event_type`, `event_id`) was written and then trimmed back during the
-last refactor when we simplified to a single zone for reliability. Restoring it is a
-contained change — see `docs/PROTOCOL.md` for the intended contract. This is exactly
-where the communication layer stopped when the clock ran out.
-
-**Also worth knowing:** one ESP32 did not survive the night. The final rig uses the
-ESP8266, not an ESP32 — the ESP32 path (see `archive/`) is gone from the demo chain.
+- **v1 (EDTH Stage Demo):** Nano samples FSR channels, ESP8266 brings up the `FSR-Hub`
+  AP, serves the live web graph and `/data` (`{"a0":..., "pressed":...}`), and classifies
+  2/3/4 taps on the onboard OLED.
+- **v2 (`firmware/v2_helmet_plate/` + `pi/tapsense_pi_client.py`):** Full 4-zone
+  directional helmet impact detection (`0–359°`), plate-carrier gesture classification,
+  16-event store-and-forward ring buffer (`/events?since=<id>`), and automatic impact
+  attachment on drone dispatch. *Note: v2 is implemented and syntax-checked; end-to-end
+  hardware verification on the 5-channel rig is pending.*
 
 ---
 
 ## Team
 
-- **Sensing & embedded communication** — myself and Tanuj Satti
+- **Sensing & embedded communication** — Liam Lange & Tanuj Satti
 - **Base station & Raspberry Pi dashboard** — Joni Dani
 - **Pitch & business** — Emil Kochovski
 - **Autonomous drone delivery integration** — Hyunjun Ju
 
-Sensor technology, hardware supply and on-site support: **CurveSYS**.
+Sensor technology, hardware supply, and on-site support: **CurveSYS**.
 Event and venue: **European Defense Tech Hub (EDTH)**, Universität der Bundeswehr München.
-
-Six people, three boards, one smoking ESP32, and a lot of energy drinks.
 
 ---
 
